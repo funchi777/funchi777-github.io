@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Column with Color Selector, Time, and Buttons</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #controls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f9f9f9;
+            padding: 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 1in; /* Fixed height of 1 inch */
+        }
+
+        #colorSelectorContainer {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding-left: 10px;
+        }
+
+        select, button {
+            font-size: 1rem;
+            padding: 5px 10px;
+            height: calc(1in - 20px); /* Adjust to fit within the fixed height */
+        }
+
+        #rotateButton {
+            padding: 5px 10px;
+            cursor: pointer;
+            border: 1px solid black;
+            background-color: white;
+            height: calc(1in - 20px); /* Adjust to fit within the fixed height */
+            margin-right: 10px;
+        }
+
+        .pressed {
+            background-color: #4CAF50; /* Color for pressed buttons */
+            color: white;
+        }
+
+      .button {
+    height: 0.5in; /* Fixed height of 1/2 inch */
+    margin: 2px;
+    padding: 5px 10px;
+    cursor: pointer;
+    border: 1px solid black;
+}
+
+     
+
+        .slot {
+            border: 1px solid black;
+            padding: 0;
+            margin: 5px 0;
+            text-align: center;
+            height: 1in; /* Fixed height of 1 inch */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slot div {
+            margin: 2px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <div id="colorSelectorContainer">
+            <select id="globalColorSelector">
+                <option value="red">red</option>
+                <option value="orange">orange</option>
+                <option value="yellow">yellow</option>
+                <option value="green">green</option>
+                <option value="blue">blue</option>
+                <option value="indigo">indigo</option>
+                <option value="violet">violet</option>
+                <option value="white">white</option>
+                <option value="black">black</option>
+                <option value="gray">gray</option>
+            </select>
+            <button id="applyColorButton">Apply Color To...</button>
+        </div>
+        <button id="rotateButton">Rotate Slots</button>
+    </div>
+
+    <div id="columnContainer"></div>
+
+    <script>
+        class Column {
+            constructor(containerId) {
+                this.container = document.getElementById(containerId);
+                this.totalSlots = 48; // Always 48 slots
+                this.startTime = 23 * 60 + 30; // Start time (in minutes, 23:30)
+                this.symbols = ['l', '-', '&', '^', '*']; // Symbols for buttons
+                this.slots = []; // Array to store slot elements
+                this.isColorModeActive = false; // Tracks if color application mode is active
+                this.selectedColor = "red"; // Default selected color
+            }
+
+            createBoxes() {
+                for (let i = 1; i <= this.totalSlots; i++) {
+                    // Create slot container
+                    const box = document.createElement("div");
+                    box.classList.add("slot");
+
+                    // Add click listener to apply color if in color mode
+                    box.addEventListener("click", () => {
+                        if (this.isColorModeActive) {
+                            box.style.backgroundColor = this.selectedColor;
+                        }
+                    });
+
+                    // Create editable time text
+                    const editableText2 = document.createElement("div");
+                    editableText2.contentEditable = true;
+                    const minutes = this.startTime - (i - 1) * 30;
+                    const hours = Math.floor(minutes / 60);
+                    const mins = minutes % 60;
+                    const formattedTime = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+                    editableText2.textContent = formattedTime;
+
+                    // Create symbol buttons
+                    const editableText3 = document.createElement("div");
+                    this.symbols.forEach(symbol => {
+                        const button = document.createElement("button");
+                        button.classList.add("button");
+                        button.textContent = symbol;
+                        button.addEventListener("click", () => {
+                            button.classList.toggle("pressed");
+                        });
+                        editableText3.appendChild(button);
+                    });
+
+                    // Append elements to the box
+                    box.appendChild(editableText2);
+                    box.appendChild(editableText3);
+
+                    // Append box to the container
+                    this.container.appendChild(box);
+
+                    // Store box and its elements for later reference
+                    this.slots.push({
+                        box,
+                        editableText2,
+                        editableText3
+                    });
+                }
+            }
+
+            rotateSlots() {
+                const lastSlot = this.slots[this.totalSlots - 1]; // Store the last slot
+
+                // Rotate properties down the slots
+                for (let i = this.totalSlots - 1; i > 0; i--) {
+                    this.copySlotProperties(this.slots[i - 1], this.slots[i]);
+                }
+
+                // Assign last slot's properties to the first slot
+                this.copySlotProperties(lastSlot, this.slots[0]);
+            }
+
+            copySlotProperties(sourceSlot, targetSlot) {
+                // Copy background color
+                targetSlot.box.style.backgroundColor = sourceSlot.box.style.backgroundColor;
+
+                // Copy editable text content
+                targetSlot.editableText2.textContent = sourceSlot.editableText2.textContent;
+
+                // Copy button pressed states
+                const sourceButtons = sourceSlot.editableText3.querySelectorAll(".button");
+                const targetButtons = targetSlot.editableText3.querySelectorAll(".button");
+                sourceButtons.forEach((button, index) => {
+                    if (button.classList.contains("pressed")) {
+                        targetButtons[index].classList.add("pressed");
+                    } else {
+                        targetButtons[index].classList.remove("pressed");
+                    }
+                });
+            }
+        }
+
+        // Initialize column and create slots
+        const column = new Column("columnContainer");
+        column.createBoxes();
+
+        // Add event listener to the rotate button
+        document.getElementById("rotateButton").addEventListener("click", () => {
+            column.rotateSlots();
+        });
+
+        // Add event listeners for global color selector and apply button
+        const colorSelector = document.getElementById("globalColorSelector");
+        const applyColorButton = document.getElementById("applyColorButton");
+
+        colorSelector.addEventListener("change", () => {
+            column.selectedColor = colorSelector.value;
+        });
+
+        applyColorButton.addEventListener("click", () => {
+            column.isColorModeActive = !column.isColorModeActive;
+            applyColorButton.classList.toggle("pressed", column.isColorModeActive);
+        });
+    </script>
+</body>
+</html>
